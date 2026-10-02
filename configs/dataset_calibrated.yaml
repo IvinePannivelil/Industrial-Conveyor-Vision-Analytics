@@ -1,0 +1,7 @@
+# Milk Bottle Detection — Anti-False-Positive Calibration Dataset
+path: dataset_calibrated
+train: images/train
+val:   images/val
+
+nc: 1
+names: ['milk_bottle']

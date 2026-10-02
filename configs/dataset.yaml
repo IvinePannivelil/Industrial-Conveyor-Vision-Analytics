@@ -1,0 +1,10 @@
+# Milk Bottle Detection — YOLOv8 Dataset Configuration
+# Path is relative to repository root (or absolute path when mounted)
+path: dataset
+train: images/train
+val:   images/val
+test:  images/test
+
+# Classes
+nc: 1
+names: ['milk_bottle']

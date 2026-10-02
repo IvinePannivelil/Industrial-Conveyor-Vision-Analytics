@@ -1,0 +1,110 @@
+# ==============================================================================
+# Industrial Conveyor Vision Analytics — .gitignore
+# ==============================================================================
+
+# Python bytecode & caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environments
+venv/
+env/
+.venv/
+ENV/
+
+# Environment Variables & Secrets
+.env
+.env.*
+*.key
+*.pem
+credentials.*
+
+# Operating System & IDE
+.DS_Store
+**/.DS_Store
+Thumbs.db
+ehthumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ==============================================================================
+# PRIVATE / PROPRIETARY DATA — DO NOT COMMIT
+# All items below contain factory imagery or sensitive pipeline data.
+# Adding to .gitignore prevents future commits; already-tracked files must be
+# untracked with: git rm --cached <path>
+# ==============================================================================
+
+# Raw proprietary datasets (factory footage from Muralya Dairy)
+Milk_Bottles/
+Milk_Pouches/
+Annotated/
+dataset/
+dataset_v2/
+*.cache
+
+# Calibration dataset — contains factory image crops and conveyor frame extracts
+dataset_calibrated/
+
+# Hard-negative images — extracted from proprietary factory validation grids
+data/negatives/
+
+# Factory frame extracts, webcam captures, annotation data, test videos
+scratch/
+
+# YOLO base model downloads (auto-downloaded by ultralytics, not repo data)
+yolov8*.pt
+
+# Training run artifacts
+# ─── Safe to keep (analysis plots, config, metrics):
+#   runs/detect/milk_bottle/Box*.png
+#   runs/detect/milk_bottle/confusion_matrix*.png
+#   runs/detect/milk_bottle/results.csv
+#   runs/detect/milk_bottle/results.png
+#   runs/detect/milk_bottle/args.yaml
+#   runs/detect/milk_bottle/training_graphs.png
+#
+# ─── Private (contain factory imagery — val/train batch visualizations):
+runs/detect/milk_bottle/val_batch*.jpg
+runs/detect/milk_bottle/train_batch*.jpg
+runs/detect/milk_bottle/labels.jpg
+#
+# ─── Calibrated run — entire directory:
+#     Contains factory train_batch*.jpg and val_batch*.jpg imagery.
+#     Safe metric plots (BoxPR_curve.png, confusion_matrix.png, results.png,
+#     results.csv, args.yaml) are excluded alongside private files for simplicity
+#     and because the calibrated weights redistribution status is unconfirmed.
+runs/detect/milk_bottle_calibrated/
+#
+# ─── Model weights (redistribution permission unconfirmed):
+runs/detect/milk_bottle/weights/*.pt
+runs/detect/milk_bottle/weights/*.onnx
+exported_model/*.onnx
+#
+# ─── v1 backup run (entire directory — redundant + contains factory imagery):
+runs/detect/milk_bottle_v1_backup/
+
+# Sample conveyor imagery — factory footage, redistribution permission unconfirmed
+samples/
+
+# Runtime-generated outputs
+screenshots/
+results/*.csv
+!results/README.md
+
+# Video files — may contain proprietary factory footage
+*.mp4
+*.avi
+*.mov
+*.mkv

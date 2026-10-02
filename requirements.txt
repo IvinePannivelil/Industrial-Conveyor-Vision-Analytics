@@ -1,0 +1,28 @@
+# ==============================================================================
+# Requirements — Industrial Conveyor Vision Analytics
+# Real-time detection, tracking, counting, throughput analytics & model reliability
+# ==============================================================================
+
+# Core Computer Vision & Deep Learning Framework
+ultralytics>=8.3.0,<=8.4.152
+torch>=2.0.0
+torchvision>=0.15.0
+opencv-python>=4.8.0
+numpy>=1.23.0,<2.3.0
+Pillow>=10.0.0
+PyYAML>=6.0
+
+# Tracking Engine Dependency (ByteTrack linear assignment)
+lap>=0.5.12
+
+# Data Processing & Visualization
+matplotlib>=3.7.0
+pandas>=2.0.0
+
+# ONNX Export & Edge Inference
+onnx>=1.12.0,<2.0.0
+onnxruntime>=1.16.0
+onnxslim>=0.1.82
+
+# Testing
+pytest>=7.0.0

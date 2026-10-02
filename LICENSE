@@ -1,0 +1,28 @@
+LICENSING NOTICE
+================
+
+This repository contains code developed by Ivine P Sabu as part of the
+Industrial Conveyor Vision Analytics project, building on a baseline YOLOv8
+detector originally trained by another member of the engineering team using
+authorized Muralya Dairy conveyor imagery.
+
+The licensing status of this repository is pending review prior to public
+publication. A LICENSE file will be added when the following has been resolved:
+
+  1. Attribution and ownership boundaries between the original baseline
+     detector and the engineering work in this repository have been
+     formally clarified.
+
+  2. Redistribution rights for any derivative of the baseline detector
+     weights have been confirmed.
+
+Until then, this repository is shared for portfolio review purposes only.
+No open-source license is granted.
+
+---
+
+Dataset & Media Notice
+----------------------
+The industrial video footage, conveyor imagery, annotations, and dataset
+images captured on-site at Muralya Dairy are proprietary and are NOT
+included in or licensed by this repository. They are excluded via .gitignore.

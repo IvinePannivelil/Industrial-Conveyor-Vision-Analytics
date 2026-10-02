@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Industrial Conveyor Vision Analytics — Control & Diagnostics Suite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Navigation Header -->
+    <header class="navbar">
+      <div class="brand">
+        <div class="logo-mark">
+          <div class="pulse-ring"></div>
+          <span class="logo-icon">⚡</span>
+        </div>
+        <div>
+          <h1 class="brand-title">Industrial Conveyor Vision Analytics</h1>
+          <p class="brand-subtitle">Real-time YOLOv8 Object Detection, ByteTrack Tracking & Throughput Engine</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="status-indicator">
+          <span class="status-dot"></span>
+          <span class="status-text" id="system-status">SIMULATOR ACTIVE</span>
+        </div>
+        <nav class="nav-tabs">
+          <button class="nav-btn active" data-tab="dashboard">Live Dashboard</button>
+          <button class="nav-btn" data-tab="reliability">Reliability Lab</button>
+          <button class="nav-btn" data-tab="architecture">Pipeline & Edge</button>
+          <button class="nav-btn" data-tab="documentation">Docs & Audit</button>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- TAB 1: LIVE VISION DASHBOARD -->
+      <section id="tab-dashboard" class="tab-pane active">
+        <!-- Top Metrics Cards -->
+        <div class="kpi-grid">
+          <div class="kpi-card glow-cyan">
+            <div class="kpi-header">
+              <span class="kpi-label">CURRENT DETECTIONS</span>
+              <span class="kpi-badge badge-sim" id="kpi-detections-badge">SIMULATED FOV</span>
+            </div>
+            <div class="kpi-value" id="kpi-detections">0</div>
+            <div class="kpi-footer">Active objects in conveyor FOV</div>
+          </div>
+
+          <div class="kpi-card glow-gold">
+            <div class="kpi-header">
+              <span class="kpi-label">OBJECTS COUNTED</span>
+              <span class="kpi-badge badge-sim" id="kpi-counted-badge">SIMULATED</span>
+            </div>
+            <div class="kpi-value" id="kpi-counted">0</div>
+            <div class="kpi-footer">Unique line-crossing events</div>
+          </div>
+
+          <div class="kpi-card glow-emerald">
+            <div class="kpi-header">
+              <span class="kpi-label">ACTIVE TRACKS</span>
+              <span class="kpi-badge badge-sim" id="kpi-tracks-badge">SIMULATED TRACKS</span>
+            </div>
+            <div class="kpi-value" id="kpi-tracks">0</div>
+            <div class="kpi-footer" id="kpi-tracks-footer">ByteTrack IDs in current frame</div>
+          </div>
+
+          <div class="kpi-card glow-indigo">
+            <div class="kpi-header">
+              <span class="kpi-label" id="kpi-latency-label">INFERENCE BUDGET</span>
+              <span class="kpi-badge badge-target" id="kpi-latency-badge">TARGET BUDGET</span>
+            </div>
+            <div class="kpi-value" id="kpi-latency">11.2 <span class="unit">ms target</span></div>
+            <div class="kpi-footer" id="kpi-fps">Target: 30 FPS budget (33.3 ms)</div>
+          </div>
+        </div>
+
+        <!-- Center Workspace: Video Stream + Controls -->
+        <div class="workspace-grid">
+          <!-- Left: Live Video Monitor -->
+          <div class="video-panel glass-panel">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <span class="stream-badge"><span class="rec-dot"></span> LIVE FEED</span>
+                <span class="stream-info" id="stream-info-text">Stream Source: Industrial Conveyor Simulator</span>
+              </div>
+              <div class="feed-controls-quick">
+                <button class="icon-btn" id="btn-reset" title="Reset Counter">🔄 Reset Counts</button>
+              </div>
+            </div>
+
+            <div class="video-viewport">
+              <img id="live-stream-img" src="/video_feed" alt="Live Industrial Vision Stream" class="video-stream">
+              <div class="hud-overlay">
+                <div class="hud-badge top-left" id="hud-top-left">YOLOv8n + ByteTrack</div>
+                <div class="hud-badge top-right" id="hud-top-right">Confidence: 40%</div>
+              </div>
+            </div>
+
+            <!-- Mini Live Event Ticker -->
+            <div class="events-ticker">
+              <span class="ticker-label">EVENT STREAM:</span>
+              <div class="ticker-content" id="live-event-ticker">Monitoring virtual trigger line for crossing events...</div>
+            </div>
+          </div>
+
+          <!-- Right: Control Deck & Telemetry -->
+          <div class="control-panel glass-panel">
+            <div class="panel-header">
+              <span class="panel-title">CONTROL & PARAMETERS</span>
+              <span class="version-tag">Edge Prototype</span>
+            </div>
+
+            <div class="control-section">
+              <label class="control-label">
+                <span>Confidence Threshold (<span id="val-conf">40%</span>)</span>
+              </label>
+              <input type="range" id="slider-conf" min="10" max="95" value="40" class="custom-slider">
+              <div class="slider-scale">
+                <span>10% (High Recall)</span>
+                <span>50%</span>
+                <span>95% (High Precision)</span>
+              </div>
+            </div>
+
+            <div class="control-section">
+              <label class="control-label">
+                <span>Virtual Counting Line Position (<span id="val-line">50%</span>)</span>
+              </label>
+              <input type="range" id="slider-line" min="15" max="85" value="50" class="custom-slider">
+              <div class="slider-scale">
+                <span>Top (Inflow)</span>
+                <span>Center</span>
+                <span>Bottom (Outflow)</span>
+              </div>
+            </div>
+
+            <div class="control-section">
+              <label class="control-label"><span>Crossing Direction Filter</span></label>
+              <div class="segmented-control" id="control-direction">
+                <button class="seg-btn active" data-dir="both">Both</button>
+                <button class="seg-btn" data-dir="down">Down ↓</button>
+                <button class="seg-btn" data-dir="up">Up ↑</button>
+              </div>
+            </div>
+
+            <div class="control-section">
+              <label class="control-label"><span>Video Feed Ingestion</span></label>
+              <div class="segmented-control" id="control-feed">
+                <button class="seg-btn active" data-feed="simulation">Conveyor Sim</button>
+                <button class="seg-btn" data-feed="camera">Webcam (Dev)</button>
+              </div>
+            </div>
+
+            <div class="control-section toggles-row">
+              <label class="toggle-container">
+                <input type="checkbox" id="toggle-tracking" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-text">ByteTrack Multi-Object Tracking</span>
+              </label>
+              <label class="toggle-container">
+                <input type="checkbox" id="toggle-counting" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-text">Virtual Line Crossing Trigger</span>
+              </label>
+            </div>
+
+            <!-- Live Throughput Canvas Graph -->
+            <div class="telemetry-chart-box">
+              <div class="chart-header">
+                <span>SIMULATED THROUGHPUT TREND (OBJECTS/MIN)</span>
+                <span class="chart-legend">Rolling 60s Window</span>
+              </div>
+              <canvas id="throughput-chart" width="340" height="110"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Telemetry Event Log -->
+        <div class="events-history-panel glass-panel">
+          <div class="panel-header">
+            <span class="panel-title">TELEMETRY EVENT AUDIT LOG</span>
+            <span class="log-count" id="log-count-text">Latest events captured</span>
+          </div>
+          <div class="events-list-container" id="events-list">
+            <!-- Dynamically populated events -->
+          </div>
+        </div>
+
+        <!-- PRODUCTION HISTORY — Aggregated analytics from count_events.csv -->
+        <div class="prod-history-panel glass-panel" id="production-history-section">
+          <div class="panel-header">
+            <span class="panel-title">PRODUCTION HISTORY</span>
+            <span class="kpi-badge badge-muted" id="ph-source-badge">CSV EVENT LOG</span>
+          </div>
+
+          <div class="ph-note" id="ph-note">
+            Aggregated from <code>results/count_events.csv</code>. Session OBJECTS COUNTED
+            (top row) is independent — it resets on Reset but historical records persist.
+          </div>
+
+          <!-- Quick Filter Row -->
+          <div class="ph-quick-filters">
+            <button class="ph-qf-btn active" data-preset="today">TODAY</button>
+            <button class="ph-qf-btn" data-preset="30m">LAST 30 MIN</button>
+            <button class="ph-qf-btn" data-preset="1h">LAST 1 HR</button>
+            <button class="ph-qf-btn" data-preset="custom">CUSTOM RANGE</button>
+          </div>
+
+          <!-- Custom Date-Time Range (hidden until CUSTOM RANGE selected) -->
+          <div class="ph-custom-range" id="ph-custom-range" style="display:none;">
+            <div class="ph-range-row">
+              <div class="ph-range-group">
+                <label class="ch-label">FROM</label>
+                <div class="ph-dt-inputs">
+                  <input type="date" id="ph-from-date" class="ch-input ph-date-input">
+                  <input type="time" id="ph-from-time" class="ch-input ph-time-input" value="00:00">
+                </div>
+              </div>
+              <div class="ph-range-group">
+                <label class="ch-label">TO</label>
+                <div class="ph-dt-inputs">
+                  <input type="date" id="ph-to-date" class="ch-input ph-date-input">
+                  <input type="time" id="ph-to-time" class="ch-input ph-time-input">
+                </div>
+              </div>
+              <button id="ph-apply-btn" class="ch-query-submit">APPLY</button>
+            </div>
+          </div>
+
+          <!-- Filter Row: Direction + Source -->
+          <div class="ph-filter-row">
+            <div class="ph-filter-group">
+              <label class="ch-label">DIRECTION</label>
+              <div class="ph-seg-ctrl" id="ph-dir-ctrl">
+                <button class="ph-seg-btn active" data-dir="">ALL</button>
+                <button class="ph-seg-btn" data-dir="DOWN">DOWN ↓</button>
+                <button class="ph-seg-btn" data-dir="UP">UP ↑</button>
+              </div>
+            </div>
+            <div class="ph-filter-group">
+              <label class="ch-label">SOURCE</label>
+              <div class="ph-seg-ctrl" id="ph-src-ctrl">
+                <button class="ph-seg-btn active" data-src="">ALL</button>
+                <button class="ph-seg-btn" data-src="live_camera">LIVE CAMERA</button>
+                <button class="ph-seg-btn" data-src="simulator">SIMULATOR</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary Metrics — 4 cards -->
+          <div class="ph-summary-grid" id="ph-summary-grid">
+            <div class="ph-metric-card ph-card-total">
+              <div class="ph-metric-value" id="ph-total">—</div>
+              <div class="ph-metric-label">OBJECTS PASSED</div>
+            </div>
+            <div class="ph-metric-card ph-card-down">
+              <div class="ph-metric-value" id="ph-down">—</div>
+              <div class="ph-metric-label">DOWN ↓</div>
+            </div>
+            <div class="ph-metric-card ph-card-up">
+              <div class="ph-metric-value" id="ph-up">—</div>
+              <div class="ph-metric-label">UP ↑</div>
+            </div>
+            <div class="ph-metric-card ph-card-rate">
+              <div class="ph-metric-value" id="ph-rate">—</div>
+              <div class="ph-metric-label">AVG RATE <span class="ph-unit">obj/min</span></div>
+            </div>
+          </div>
+
+          <!-- Mixed source warning -->
+          <div class="ph-mixed-warning" id="ph-mixed-warning" style="display:none;">
+            ⚠ Includes both simulated and live-camera events
+          </div>
+
+          <!-- Production Over Time Bar Chart -->
+          <div class="ph-chart-section" id="ph-chart-section">
+            <div class="ph-chart-header">
+              <span class="ph-chart-title">Objects Passed Over Time</span>
+              <span class="ph-chart-meta" id="ph-chart-meta"></span>
+            </div>
+            <div class="ph-chart-container" id="ph-chart-container">
+              <canvas id="ph-bar-chart"></canvas>
+              <div class="ph-empty-state" id="ph-empty-state" style="display:none;">
+                No crossing events recorded in this period.
+              </div>
+            </div>
+            <div class="ph-chart-axis-label">Time</div>
+          </div>
+
+          <!-- Detailed Events Drill-down (collapsed by default) -->
+          <details class="ph-events-details" id="ph-events-details">
+            <summary class="ph-events-summary">
+              <span>DETAILED EVENTS</span>
+              <span class="ph-events-count" id="ph-events-count">0 events</span>
+            </summary>
+            <div class="ph-events-body">
+              <div class="ch-table-wrapper">
+                <table class="ch-table">
+                  <thead>
+                    <tr>
+                      <th>TIME</th>
+                      <th>TRACK ID</th>
+                      <th>DIR</th>
+                      <th>CONF</th>
+                      <th>SOURCE</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ph-events-tbody">
+                    <tr><td colspan="5" class="ch-empty">Expand to load events…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </div>
+      </section>
+
+
+      <!-- TAB 2: RELIABILITY LAB — ML EXPERIMENT WORKBENCH -->
+      <section id="tab-reliability" class="tab-pane">
+        <div class="workbench-header">
+          <span class="workbench-tag">ML RELIABILITY WORKBENCH // EXPERIMENTAL LAB</span>
+          <h2>Reliability Lab & Failure Mode Investigation</h2>
+          <p>An empirical engineering investigation: how the vision system behaves, why it fails under factory conditions, and how detection reliability was diagnosed and calibrated.</p>
+        </div>
+
+        <!-- SECTION A: MODEL HEALTH SNAPSHOT -->
+        <div class="snapshot-strip">
+          <div class="snapshot-card">
+            <span class="snapshot-label">Baseline Model</span>
+            <span class="snapshot-val">YOLOv8n <span class="snapshot-badge badge-cyan">3.01M params</span></span>
+          </div>
+          <div class="snapshot-card">
+            <span class="snapshot-label">Evaluation Context</span>
+            <span class="snapshot-val">Frame-Level v1 Split</span>
+          </div>
+          <div class="snapshot-card">
+            <span class="snapshot-label">Dataset Status</span>
+            <span class="snapshot-val"><span class="snapshot-badge badge-amber">Temporal Leakage Risk</span></span>
+          </div>
+          <div class="snapshot-card">
+            <span class="snapshot-label">Calibration State</span>
+            <span class="snapshot-val"><span class="snapshot-badge badge-measured">Completed — 138 Negatives</span></span>
+          </div>
+          <div class="snapshot-card">
+            <span class="snapshot-label">Sequence Retraining</span>
+            <span class="snapshot-val"><span class="snapshot-badge badge-muted">Pending Raw Video Clips</span></span>
+          </div>
+        </div>
+
+        <div class="caveat-callout">
+          <span class="callout-icon">⚠️</span>
+          <div class="callout-text">
+            <strong>Methodological Evaluation Caveat:</strong> Baseline validation metrics (98.3% mAP@50) are in-distribution indicators and may be optimistic because temporally adjacent video frames were split across training and validation sets. Calibrated results represent targeted background false-positive suppression on a controlled benchmark set rather than an unconstrained multi-factory evaluation.
+          </div>
+        </div>
+
+        <!-- SECTION B: FAILURE MODE INVESTIGATION -->
+        <div class="lab-section-header">
+          <div>
+            <h3 class="lab-section-title"><span>🔍</span> Failure Mode Investigation & Mitigation Flow</h3>
+            <p class="lab-section-subtitle">Vertical root-cause anatomy: Observed Failure → Root Cause Hypothesis → Empirical Evidence → Engineering Mitigation → Post-Mitigation Result & Scope</p>
+          </div>
+        </div>
+
+        <div class="investigation-flow">
+          <!-- Case 1 -->
+          <div class="investigation-card">
+            <div class="card-top-bar">
+              <div>
+                <span class="failure-id-tag">FAILURE 01 // FALSE ACTIVATION</span>
+                <span class="failure-title">White Surface False Positive Proposal</span>
+              </div>
+              <span class="badge-success">Suppressed on Test Image</span>
+            </div>
+            <div class="investigation-steps">
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-observed">Observed Failure</span>
+                <p class="inv-step-desc"><strong>74.5% confidence false detection</strong> on an unannotated neutral whiteboard test surface.</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-root">Root Cause Hypothesis</span>
+                <p class="inv-step-desc">Absence of negative-only (background) images in the baseline training set caused the detector to over-index on white boundary contrast.</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-evidence">Empirical Evidence</span>
+                <p class="inv-step-desc"><strong>0% negative-image coverage</strong> in original dataset audit (all 43 images contained foreground bottles).</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-mitigation">Engineering Mitigation</span>
+                <p class="inv-step-desc">Integrated <strong>138 hard-negative background tiles</strong> (plant floor, wall, drain, neutral frames) with empty labels into a 15-epoch calibration fine-tuning pass.</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-status">Observed Result & Scope</span>
+                <p class="inv-step-desc"><strong>0 detections observed</strong> on evaluated whiteboard test image.<br><span class="scope-pill">Scope: Single controlled test condition — not a universal FP claim</span></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Case 2 -->
+          <div class="investigation-card">
+            <div class="card-top-bar">
+              <div>
+                <span class="failure-id-tag">FAILURE 02 // GEOMETRIC ARTIFACT</span>
+                <span class="failure-title">Conveyor Frame & Metallic Rail Ghost Proposals</span>
+              </div>
+              <span class="badge-success">Suppressed at Operating Threshold</span>
+            </div>
+            <div class="investigation-steps">
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-observed">Observed Failure</span>
+                <p class="inv-step-desc">Ghost detections on empty conveyor lower rails, motor mounts, and drain grates when operating at low confidence (&lt; 0.35).</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-root">Root Cause Hypothesis</span>
+                <p class="inv-step-desc">Parallel linear metallic slots and cylindrical rail curvature share gradient and aspect ratio features with bottle silhouettes.</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-evidence">Empirical Evidence</span>
+                <p class="inv-step-desc">Persistent false activations observed on empty plant background crops during calibration review.</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-mitigation">Engineering Mitigation</span>
+                <p class="inv-step-desc">Enforced operational confidence threshold (<strong>&ge; 0.40</strong>) and paired 38 empty conveyor, guide rail, and drain grate negative tiles.</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-status">Observed Result & Scope</span>
+                <p class="inv-step-desc">False activations <strong>suppressed at operational threshold</strong> in evaluated calibration samples.<br><span class="scope-pill">Scope: Evaluated calibration set</span></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Case 3 -->
+          <div class="investigation-card">
+            <div class="card-top-bar">
+              <div>
+                <span class="failure-id-tag">FAILURE 03 // SPECULAR ARTIFACT</span>
+                <span class="failure-title">Stainless Steel Plate Specular Highlight Glare</span>
+              </div>
+              <span class="badge-success">Reduced in Calibration Set</span>
+            </div>
+            <div class="investigation-steps">
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-observed">Observed Failure</span>
+                <p class="inv-step-desc">Intermittent false proposals triggered by overhead fluorescent fixtures mirroring bottle reflections on stainless steel bed plates.</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-root">Root Cause Hypothesis</span>
+                <p class="inv-step-desc">High-intensity specular hotspots generate high-frequency boundary gradients mimicking bottle neck and cap highlights.</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-evidence">Empirical Evidence</span>
+                <p class="inv-step-desc">Confidence spikes coinciding with fluctuating plant lighting conditions on reflective metal surfaces.</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-mitigation">Engineering Mitigation</span>
+                <p class="inv-step-desc">Added unannotated reflective steel plate tiles and brightness/contrast jitter augmentations during calibration fine-tune.</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-status">Observed Result & Scope</span>
+                <p class="inv-step-desc">Specular false proposals <strong>reduced in evaluated calibration samples</strong>.<br><span class="scope-pill">Scope: Factory lighting remains an external environmental variable</span></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Case 4 -->
+          <div class="investigation-card">
+            <div class="card-top-bar">
+              <div>
+                <span class="failure-id-tag">FAILURE 04 // DATASET CONTAMINATION</span>
+                <span class="failure-title">Temporal Train-Validation Frame Autocorrelation</span>
+              </div>
+              <span class="badge-warning">Identified & Documented</span>
+            </div>
+            <div class="investigation-steps">
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-observed">Observed Failure</span>
+                <p class="inv-step-desc">Disparity between high baseline validation metrics (98.3% mAP@50) and real-world edge case false positive susceptibility.</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-root">Root Cause Hypothesis</span>
+                <p class="inv-step-desc">Random frame-level splitting on continuous video captures caused near-identical adjacent frames to populate both train and validation splits.</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-evidence">Empirical Evidence</span>
+                <p class="inv-step-desc">Inspection revealed temporally adjacent frames (frame t and frame t+1) divided across training and validation partitions.</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-mitigation">Engineering Mitigation</span>
+                <p class="inv-step-desc">Designed a <strong>sequence-aware validation protocol</strong> partitioning by distinct recording episodes, and established a dedicated hard-negative evaluation suite.</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-status">Observed Result & Scope</span>
+                <p class="inv-step-desc">Temporal leakage isolated and documented; baseline metrics scoped as in-distribution indicators.<br><span class="scope-pill">Scope: Dataset architecture audit and protocol design</span></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Case 5 -->
+          <div class="investigation-card">
+            <div class="card-top-bar">
+              <div>
+                <span class="failure-id-tag">FAILURE 05 // TEMPORAL CONTINUITY</span>
+                <span class="failure-title">Transient Detection Dropout & Track ID Fragmentation</span>
+              </div>
+              <span class="badge-success">Test Suite Verified</span>
+            </div>
+            <div class="investigation-steps">
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-observed">Observed Failure</span>
+                <p class="inv-step-desc">Momentary confidence dips during bottle clustering, minor motion blur, or partial occlusion risking track ID loss or duplicate counting.</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-root">Root Cause Hypothesis</span>
+                <p class="inv-step-desc">Single-threshold association discards valid detections when confidence drops marginally below the primary threshold.</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-evidence">Empirical Evidence</span>
+                <p class="inv-step-desc">Transient single-frame dropouts observed in continuous video footage during conveyor belt speed surges.</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-mitigation">Engineering Mitigation</span>
+                <p class="inv-step-desc">Implemented <strong>ByteTrack two-stage association</strong> (matching high-confidence detections first, then associating low-confidence [0.10–0.40] detections with existing tracks) with Kalman motion filtering.</p>
+              </div>
+              <div class="inv-step-box">
+                <span class="inv-step-tag tag-status">Observed Result & Scope</span>
+                <p class="inv-step-desc"><strong>No ID swap observed</strong> in deterministic two-object test; track continuity maintained across 3-frame occlusion dropouts.<br><span class="scope-pill">Scope: Automated test suite (tests/test_tracker.py, tests/test_counter.py)</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION C: EXPERIMENT COMPARISON MATRIX -->
+        <div class="lab-section-header">
+          <div>
+            <h3 class="lab-section-title"><span>⚖️</span> Experiment Comparison Matrix</h3>
+            <p class="lab-section-subtitle">Multi-stage progression: Baseline v1 → Hard-Negative Calibration Patch → Sequence-Aware v2 (Target)</p>
+          </div>
+        </div>
+
+        <div class="experiment-grid">
+          <!-- Column 1 -->
+          <div class="experiment-col">
+            <div class="col-header">
+              <div>
+                <h4 class="col-title">Baseline v1</h4>
+                <div class="col-model">YOLOv8n • 100 Epochs</div>
+              </div>
+              <span class="snapshot-badge badge-amber">Completed</span>
+            </div>
+            <div class="exp-spec-list">
+              <div class="exp-spec-row"><span class="exp-spec-key">Split Strategy</span><span class="exp-spec-val">Random frame-level</span></div>
+              <div class="exp-spec-row"><span class="exp-spec-key">Positive Frames</span><span class="exp-spec-val">43 frames</span></div>
+              <div class="exp-spec-row"><span class="exp-spec-key">Negative Frames</span><span class="exp-spec-val">0 (no background)</span></div>
+              <div class="exp-spec-row"><span class="exp-spec-key">Identified Limitation</span><span class="exp-spec-val" style="color:#FBBF24">Temporal leakage risk</span></div>
+            </div>
+            <div class="metrics-table">
+              <div class="metric-delta-row"><span class="metric-name">Precision (B)</span><span class="metric-score">92.1%</span></div>
+              <div class="metric-delta-row"><span class="metric-name">Recall (B)</span><span class="metric-score">96.6%</span></div>
+              <div class="metric-delta-row"><span class="metric-name">mAP@50</span><span class="metric-score">98.3% <span class="delta-badge delta-neutral">0.984 peak</span></span></div>
+              <div class="metric-delta-row"><span class="metric-name">mAP@50-95</span><span class="metric-score">63.9%</span></div>
+              <div class="metric-delta-row"><span class="metric-name">Whiteboard FP Test</span><span class="metric-score" style="color:#F87171">74.5% Conf (FP)</span></div>
+            </div>
+          </div>
+
+          <!-- Column 2 -->
+          <div class="experiment-col active-experiment">
+            <div class="col-header">
+              <div>
+                <h4 class="col-title">Calibration Patch</h4>
+                <div class="col-model">YOLOv8n Fine-Tune • 15 Epochs</div>
+              </div>
+              <span class="snapshot-badge badge-measured">Completed</span>
+            </div>
+            <div class="exp-spec-list">
+              <div class="exp-spec-row"><span class="exp-spec-key">Split Strategy</span><span class="exp-spec-val">Controlled benchmark split</span></div>
+              <div class="exp-spec-row"><span class="exp-spec-key">Positive Frames</span><span class="exp-spec-val">43 frames</span></div>
+              <div class="exp-spec-row"><span class="exp-spec-key">Negative Frames</span><span class="exp-spec-val">138 hard-negatives</span></div>
+              <div class="exp-spec-row"><span class="exp-spec-key">Primary Focus</span><span class="exp-spec-val" style="color:#34D399">Background suppression</span></div>
+            </div>
+            <div class="metrics-table">
+              <div class="metric-delta-row"><span class="metric-name">Precision (B)</span><span class="metric-score">94.4% <span class="delta-badge delta-pos">+2.3 pp</span></span></div>
+              <div class="metric-delta-row"><span class="metric-name">Recall (B)</span><span class="metric-score">84.2% <span class="delta-badge delta-neg">-12.4 pp</span></span></div>
+              <div class="metric-delta-row"><span class="metric-name">mAP@50</span><span class="metric-score">95.2% <span class="delta-badge delta-neg">-3.1 pp</span></span></div>
+              <div class="metric-delta-row"><span class="metric-name">mAP@50-95</span><span class="metric-score">79.1% <span class="delta-badge delta-pos">+15.2 pp</span></span></div>
+              <div class="metric-delta-row"><span class="metric-name">Whiteboard FP Test</span><span class="metric-score" style="color:#34D399">0 Detections (Clean)</span></div>
+            </div>
+          </div>
+
+          <!-- Column 3 -->
+          <div class="experiment-col">
+            <div class="col-header">
+              <div>
+                <h4 class="col-title">Sequence-Aware v2</h4>
+                <div class="col-model">YOLOv8n Retraining • Target</div>
+              </div>
+              <span class="snapshot-badge badge-muted">Planned / Target</span>
+            </div>
+            <div class="exp-spec-list">
+              <div class="exp-spec-row"><span class="exp-spec-key">Split Strategy</span><span class="exp-spec-val">Grouped episode partition</span></div>
+              <div class="exp-spec-row"><span class="exp-spec-key">Dataset Scope</span><span class="exp-spec-val">Continuous video captures</span></div>
+              <div class="exp-spec-row"><span class="exp-spec-key">Annotation Policy</span><span class="exp-spec-val">Canonical boundary protocol</span></div>
+              <div class="exp-spec-row"><span class="exp-spec-key">Target Execution</span><span class="exp-spec-val" style="color:#FBBF24">Awaiting raw dataset</span></div>
+            </div>
+            <div class="metrics-table">
+              <div class="metric-delta-row"><span class="metric-name">Precision (B)</span><span class="metric-score" style="color:var(--text-muted)">Pending dataset</span></div>
+              <div class="metric-delta-row"><span class="metric-name">Recall (B)</span><span class="metric-score" style="color:var(--text-muted)">Pending dataset</span></div>
+              <div class="metric-delta-row"><span class="metric-name">mAP@50</span><span class="metric-score" style="color:var(--text-muted)">Pending dataset</span></div>
+              <div class="metric-delta-row"><span class="metric-name">mAP@50-95</span><span class="metric-score" style="color:var(--text-muted)">Pending dataset</span></div>
+              <div class="metric-delta-row"><span class="metric-name">Whiteboard FP Test</span><span class="metric-score" style="color:var(--text-muted)">Planned evaluation</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="delta-analysis-box">
+          <div class="delta-analysis-title">EXPERIMENTAL DELTA ANALYSIS // ENGINEERING RATIONALE</div>
+          <div class="delta-insights-list">
+            <div class="delta-insight-item">
+              <strong>Why Recall Dropped (96.6% → 84.2%):</strong> Calibration penalized false positive activations across 138 background tiles. The model learned more conservative boundary decision thresholds, trading off edge-case sensitivity for false-positive suppression.
+            </div>
+            <div class="delta-insight-item">
+              <strong>Why mAP@50-95 Rose (63.9% → 79.1%):</strong> An absolute gain of +15.24 percentage points (+23.85% relative) demonstrates significantly tighter bounding-box localization on the controlled calibration split.
+            </div>
+            <div class="delta-insight-item">
+              <strong>Methodological Context:</strong> Evaluation protocols differ between the original random frame split and the controlled calibration split. These figures serve as diagnostic evidence of mitigation rather than a direct replacement benchmark.
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION D: EVIDENCE & LIMITATIONS -->
+        <div class="lab-section-header">
+          <div>
+            <h3 class="lab-section-title"><span>📋</span> Reliability Investigation Timeline & Evidence Ledger</h3>
+            <p class="lab-section-subtitle">Traceable verification record: Every observation mapped to its empirical evaluation scope and verification status.</p>
+          </div>
+        </div>
+
+        <!-- Visual Timeline -->
+        <div class="timeline-container">
+          <div class="timeline-step">
+            <span class="timeline-step-num">01</span>
+            <span class="timeline-step-title">Baseline Audit</span>
+            <span class="timeline-step-status status-done">DONE</span>
+          </div>
+          <span class="timeline-arrow">→</span>
+          <div class="timeline-step">
+            <span class="timeline-step-num">02</span>
+            <span class="timeline-step-title">Temporal Leakage ID</span>
+            <span class="timeline-step-status status-done">DONE</span>
+          </div>
+          <span class="timeline-arrow">→</span>
+          <div class="timeline-step">
+            <span class="timeline-step-num">03</span>
+            <span class="timeline-step-title">FP Reproduction</span>
+            <span class="timeline-step-status status-done">DONE</span>
+          </div>
+          <span class="timeline-arrow">→</span>
+          <div class="timeline-step">
+            <span class="timeline-step-num">04</span>
+            <span class="timeline-step-title">Hard-Negative Mining</span>
+            <span class="timeline-step-status status-done">DONE</span>
+          </div>
+          <span class="timeline-arrow">→</span>
+          <div class="timeline-step">
+            <span class="timeline-step-num">05</span>
+            <span class="timeline-step-title">Calibration Fine-Tune</span>
+            <span class="timeline-step-status status-done">DONE</span>
+          </div>
+          <span class="timeline-arrow">→</span>
+          <div class="timeline-step">
+            <span class="timeline-step-num">06</span>
+            <span class="timeline-step-title">Comparative Evaluation</span>
+            <span class="timeline-step-status status-done">DONE</span>
+          </div>
+          <span class="timeline-arrow">→</span>
+          <div class="timeline-step planned">
+            <span class="timeline-step-num">07</span>
+            <span class="timeline-step-title">Sequence Retraining</span>
+            <span class="timeline-step-status status-planned">PLANNED</span>
+          </div>
+        </div>
+
+        <!-- Evidence Ledger Table -->
+        <div class="glass-panel" style="margin-bottom: 20px;">
+          <div class="panel-header">
+            <span class="panel-title">EVIDENCE LEDGER // EMPIRICAL SCOPE AUDIT</span>
+            <span class="metric-badge">Systematic Verification</span>
+          </div>
+          <div class="table-responsive">
+            <table class="audit-table">
+              <thead>
+                <tr>
+                  <th>Finding / Tested Behavior</th>
+                  <th>Evidence Source / Artifact</th>
+                  <th>Evaluation Scope & Limitations</th>
+                  <th>Verification Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Whiteboard False Positive</strong></td>
+                  <td>Controlled test image evaluation</td>
+                  <td>Single indoor neutral surface test; not a universal factory-wide claim</td>
+                  <td><span class="badge-success">Suppressed to 0 detections</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Conveyor Drain Grates</strong></td>
+                  <td>38 mined plant background negative crops</td>
+                  <td>Evaluated across calibration validation set</td>
+                  <td><span class="badge-success">Suppressed in calibration set</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Stainless Steel Plate Specular Reflections</strong></td>
+                  <td>Reflective surface augmentations and crops</td>
+                  <td>Factory lighting variation remains a field variable</td>
+                  <td><span class="badge-success">Reduced in evaluated samples</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Tracking ID Stability Across Proximity</strong></td>
+                  <td>Automated deterministic unit test</td>
+                  <td>Synthetic two-object crossing scenario (tests/test_tracker.py)</td>
+                  <td><span class="badge-success">No ID swap observed in test</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Boundary Jitter Count Deduplication</strong></td>
+                  <td>Automated unit test with oscillating coordinates</td>
+                  <td>Boundary hysteresis state machine (tests/test_counter.py)</td>
+                  <td><span class="badge-success">0 duplicate counts observed</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Temporal Train/Validation Leakage</strong></td>
+                  <td>Dataset split audit and adjacent frame inspection</td>
+                  <td>Baseline v1 dataset (random frame partition)</td>
+                  <td><span class="badge-warning">Identified & Documented</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Multi-Plant Generalization</strong></td>
+                  <td>No external factory datasets tested</td>
+                  <td>Transfer to alternative conveyor geometries is unverified</td>
+                  <td><span class="badge-danger">Not Validated / Untested</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Collapsible Stored Baseline Training Artifacts -->
+        <details class="collapsible-artifacts">
+          <summary class="collapsible-summary">
+            <span>📊 Stored Baseline Training Artifacts (PR Curve, F1 Curve, Confusion Matrix, Loss Curves)</span>
+            <span style="font-size:0.8rem; font-family:var(--font-mono); color:var(--text-muted)">Click to Expand / Collapse</span>
+          </summary>
+          <div class="collapsible-content">
+            <div class="diagnostics-grid">
+              <!-- PR Curve -->
+              <div class="diag-card glass-panel">
+                <div class="diag-card-header">
+                  <h3>Precision-Recall (PR) Curve</h3>
+                  <span class="metric-badge">mAP@50: 98.3% (0.984 peak)</span>
+                </div>
+                <div class="diag-img-container">
+                  <img src="/api/metrics_image/BoxPR_curve.png" alt="Precision-Recall Curve" class="metric-img">
+                </div>
+                <p class="diag-desc"><strong>Source:</strong> runs/detect/milk_bottle/BoxPR_curve.png<br><strong>Experiment:</strong> Baseline v1 (100 Epochs)<br><strong>Caveat:</strong> Frame-level validation split contains temporal-adjacency risk.</p>
+              </div>
+
+              <!-- F1 Curve -->
+              <div class="diag-card glass-panel">
+                <div class="diag-card-header">
+                  <h3>F1-Confidence Curve</h3>
+                  <span class="metric-badge">Optimal Conf: ~0.40 - 0.72</span>
+                </div>
+                <div class="diag-img-container">
+                  <img src="/api/metrics_image/BoxF1_curve.png" alt="F1 Score Curve" class="metric-img">
+                </div>
+                <p class="diag-desc"><strong>Source:</strong> runs/detect/milk_bottle/BoxF1_curve.png<br><strong>Experiment:</strong> Baseline v1<br><strong>Caveat:</strong> F1 peaks at 0.94-0.96 within the baseline in-distribution split.</p>
+              </div>
+
+              <!-- Confusion Matrix -->
+              <div class="diag-card glass-panel">
+                <div class="diag-card-header">
+                  <h3>Normalized Confusion Matrix</h3>
+                  <span class="metric-badge">Recall: 96.6% (0.97 in matrix)</span>
+                </div>
+                <div class="diag-img-container">
+                  <img src="/api/metrics_image/confusion_matrix_normalized.png" alt="Confusion Matrix Normalized" class="metric-img">
+                </div>
+                <p class="diag-desc"><strong>Source:</strong> runs/detect/milk_bottle/confusion_matrix_normalized.png<br><strong>Experiment:</strong> Baseline v1<br><strong>Caveat:</strong> Background FP rate on negative tiles addressed in calibration patch.</p>
+              </div>
+
+              <!-- Training Loss -->
+              <div class="diag-card glass-panel">
+                <div class="diag-card-header">
+                  <h3>Training & Validation Convergence</h3>
+                  <span class="metric-badge">100 Epochs (Baseline v1)</span>
+                </div>
+                <div class="diag-img-container">
+                  <img src="/api/metrics_image/results.png" alt="Training Convergence Curves" class="metric-img">
+                </div>
+                <p class="diag-desc"><strong>Source:</strong> runs/detect/milk_bottle/results.png<br><strong>Experiment:</strong> Baseline v1<br><strong>Note:</strong> Box, class, and DFL loss curves recorded in results.csv.</p>
+              </div>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <!-- TAB 3: SYSTEM ARCHITECTURE & EDGE PIPELINE -->
+      <section id="tab-architecture" class="tab-pane">
+        <div class="section-intro">
+          <h2>System Architecture & Edge Deployment Profile</h2>
+          <p>Real-time edge processing pipeline engineered for 30 FPS tracking budget on industrial edge computing devices.</p>
+        </div>
+
+        <!-- Architecture Flow Cards -->
+        <div class="pipeline-flow-container">
+          <div class="pipeline-step">
+            <div class="step-num">01</div>
+            <div class="step-title">Ingestion & Buffer</div>
+            <div class="step-desc">OpenCV VideoCapture / RTSP stream decoding into double-buffered RGB frames (640×640).</div>
+            <div class="step-metric">Stage: Input I/O</div>
+          </div>
+          <div class="flow-arrow">→</div>
+
+          <div class="pipeline-step">
+            <div class="step-num">02</div>
+            <div class="step-title">YOLOv8n Inference</div>
+            <div class="step-desc">Modified CSPDarknet53 backbone with C2f modules, PANet neck, and decoupled anchor-free head.</div>
+            <div class="step-metric">Stage: Deep Learning</div>
+          </div>
+          <div class="flow-arrow">→</div>
+
+          <div class="pipeline-step">
+            <div class="step-num">03</div>
+            <div class="step-title">ByteTrack Association</div>
+            <div class="step-desc">Two-stage association matching high-confidence detections first, then low-confidence detections with Kalman filtering.</div>
+            <div class="step-metric">Stage: Multi-Object Tracking</div>
+          </div>
+          <div class="flow-arrow">→</div>
+
+          <div class="pipeline-step">
+            <div class="step-num">04</div>
+            <div class="step-title">Virtual Line Trigger</div>
+            <div class="step-desc">Directional trajectory raycasting across boundary threshold with per-ID deduplication state.</div>
+            <div class="step-metric">Stage: State Machine</div>
+          </div>
+          <div class="flow-arrow">→</div>
+
+          <div class="pipeline-step highlight">
+            <div class="step-num">05</div>
+            <div class="step-title">Analytics & Telemetry</div>
+            <div class="step-desc">Rolling throughput calculation (objects/min), HUD compositing, and async CSV logging.</div>
+            <div class="step-metric">Stage: Production Telemetry</div>
+          </div>
+        </div>
+
+        <!-- Architecture Diagram & Hardware Profile -->
+        <div class="arch-split-grid">
+          <div class="glass-panel">
+            <div class="panel-header">
+              <span class="panel-title">YOLOV8n ARCHITECTURE TOPOLOGY</span>
+            </div>
+            <div class="arch-img-box">
+              <img src="/api/metrics_image/yolov8n_architecture.png" alt="YOLOv8 Architecture" class="arch-img">
+            </div>
+          </div>
+
+          <div class="glass-panel">
+            <div class="panel-header">
+              <span class="panel-title">EDGE DEPLOYMENT PROFILE & BENCHMARKS</span>
+            </div>
+            <div class="specs-list">
+              <div class="spec-category-title">MEASURED LOCAL BENCHMARKS</div>
+              <div class="spec-row">
+                <span class="spec-name">ONNX CPU Runtime (x86-64)</span>
+                <span class="spec-val highlight-val">~17.8 ms / frame (Measured locally)</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-name">PyTorch MPS Validation</span>
+                <span class="spec-val">~35.9 ms / frame (Apple Silicon evaluation)</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-name">Model Parameter Count</span>
+                <span class="spec-val">3.01 Million Parameters (FP32: 5.95 MB)</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-name">Automated Test Suite</span>
+                <span class="spec-val highlight-val">34 / 34 Tests Passed (pytest)</span>
+              </div>
+
+              <div class="spec-category-title" style="margin-top: 10px;">TARGET PRODUCTION BUDGET</div>
+              <div class="spec-row">
+                <span class="spec-name">Target Frame Budget (30 FPS)</span>
+                <span class="spec-val">33.3 ms / frame total budget</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-name">Target Allocation Budget</span>
+                <span class="spec-val">&lt; 18 ms inference + &lt; 5 ms tracking + &lt; 5 ms I/O</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-name">Potential Target Hardware</span>
+                <span class="spec-val">Jetson-class edge GPU, x86 industrial PC (Target candidates)</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-name">Active Telemetry Protocol</span>
+                <span class="spec-val">Local CSV + browser dashboard (Current)</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-name">Future Telemetry Integration</span>
+                <span class="spec-val">REST API / WebSocket (Future work)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: DOCUMENTATION & ATTRIBUTION AUDIT -->
+      <section id="tab-documentation" class="tab-pane">
+        <div class="docs-viewer-container glass-panel">
+          <div class="docs-sidebar">
+            <div class="sidebar-title">DOCUMENTATION</div>
+            <button class="doc-link-btn active" data-doc="readme">Project README</button>
+            <button class="doc-link-btn" data-doc="experiments">EXPERIMENTS.md</button>
+            <button class="doc-link-btn" data-doc="architecture">docs/architecture.md</button>
+            <button class="doc-link-btn" data-doc="evaluation">docs/evaluation.md</button>
+          </div>
+          <div class="docs-markdown-body" id="docs-content">
+            <div class="loading-spinner">Loading documentation...</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Status Bar -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        <span>Industrial Conveyor Vision Analytics Suite</span>
+        <span class="sep">•</span>
+        <span>YOLOv8 + ByteTrack Conveyor Automation</span>
+        <span class="sep">•</span>
+        <span class="legal-attribution">Attribution: Baseline detector originally developed using Muralya Dairy conveyor imagery; enhanced with multi-object tracking, throughput analytics, and hard-negative calibration.</span>
+      </div>
+      <div class="footer-right">
+        <span class="indicator-active">● Connected to Local Pipeline (Port 8080)</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/static/app.js?v=3.1"></script>
+</body>
+</html>

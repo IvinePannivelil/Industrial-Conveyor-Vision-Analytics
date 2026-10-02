@@ -1,0 +1,8 @@
+# Milk Bottle Detection v2 — Leakage-Free Dataset with Hard Negatives
+path: dataset_v2
+train: images/train
+val:   images/val
+test:  images/test
+
+nc: 1
+names: ['milk_bottle']
