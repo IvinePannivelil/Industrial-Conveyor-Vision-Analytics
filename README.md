@@ -119,7 +119,7 @@ Building on that baseline detector, my engineering contributions encompass:
 
 ```bash
 # Clone the repository
-git clone https://github.com/<your-username>/Industrial-Conveyor-Vision-Analytics.git
+git clone https://github.com/IvinePannivelil/Industrial-Conveyor-Vision-Analytics.git
 cd Industrial-Conveyor-Vision-Analytics
 
 # Create and activate a virtual environment (recommended)
